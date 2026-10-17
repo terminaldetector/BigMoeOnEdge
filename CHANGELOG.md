@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims to follow
 Semantic Versioning.
 
+## [0.30.1] - 2026-10-17
+
+### Fixed
+- **Re-picking a `.gguf` under a name already in the models dir no longer silently keeps the old
+  file.** `SafImport.importGguf` treated any existing file of the picked name as "already
+  imported" and returned it unread — so picking a *different* file that happened to share a name
+  with one already on the phone (a re-download under the same filename, a different quant of the
+  same model) reported success while the model actually loadable afterwards was still the stale
+  one, with no sign anything was wrong. The picked file's reported size is now compared against
+  the file already on disk: a match is still treated as the same import (a true no-op, as before);
+  a mismatch leaves the existing model untouched and lands the new import under a uniquified name
+  (`model (2).gguf`), keeping any split-shard suffix (`-00001-of-0000N.gguf`) at the end so the
+  server's shard grouping still recognizes it. When the picker reports no size at all there is no
+  cheap signal to detect a mismatch without reading the whole file, so the name is still trusted as
+  before — a documented, narrow limitation, not silently "fixed" away.
+- Added unit tests for the conflict resolution above (`SafImportTargetTest`) and for
+  `GgufHeader.isMoe` (`GgufHeaderTest`), which had none: synthetic, metadata-only `.gguf` headers
+  built byte-by-byte, no multi-GB fixture needed, covering the dense negative case, the
+  `expert_count` KV signal, the `ffn_down_exps` tensor-name signal, the split-shard first-shard
+  case (KV present, no expert tensors), and the corrupt-file substring fallback.
+- App version bumped to 0.30.1 (versionCode 46).
+
 ## [0.30.0] - 2026-10-16
 
 ### Added

@@ -34,7 +34,7 @@ object SafImport {
             // Import into app-internal storage (real f2fs/ext4), not the emulated external dir:
             // O_DIRECT works there, so the streamed model reads back at full speed.
             val dir = ModelManager.internalModelsDir(ctx)
-            val finalFile = File(dir, name)
+            val finalFile = resolveTarget(dir, name, size)
             if (finalFile.isFile) return@runCatching finalFile
 
             if (size > 0 && size > dir.usableSpace) {
@@ -65,6 +65,30 @@ object SafImport {
                 throw t
             }
         }
+    }
+
+    /**
+     * Where this import should land. A name already on disk is only reused when it is plausibly
+     * the same file (same size — the one cheap signal SAF gives us without reading the whole
+     * stream); a size mismatch means the picked file is NOT what is already there, so the
+     * existing model is left untouched and the import gets a uniquified name instead, keeping
+     * any split-shard suffix (`-00001-of-0000N.gguf`) at the end so the server's shard grouping
+     * still recognizes it. When the picker reports no size at all, the name is trusted as before:
+     * there is no signal to detect a mismatch without materializing the whole file first.
+     */
+    internal fun resolveTarget(dir: File, name: String, pickedSize: Long): File {
+        val existing = File(dir, name)
+        if (!existing.isFile || pickedSize <= 0 || existing.length() == pickedSize) return existing
+
+        val shardSuffix = ModelManager.SHARD_SUFFIX.find(name)?.value ?: ".gguf"
+        val stem = name.removeSuffix(shardSuffix)
+        var n = 2
+        var candidate = File(dir, "$stem ($n)$shardSuffix")
+        while (candidate.isFile) {
+            n++
+            candidate = File(dir, "$stem ($n)$shardSuffix")
+        }
+        return candidate
     }
 
     private fun queryNameAndSize(ctx: Context, uri: Uri): Pair<String, Long> {

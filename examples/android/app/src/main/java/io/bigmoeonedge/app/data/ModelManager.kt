@@ -72,7 +72,7 @@ object ModelManager {
     // metadata — llama.cpp and the engine read everything from the FIRST shard, which is the only
     // selectable file of the set. Their header also fails GgufHeader.isMoe, but that would be
     // filtering by accident; this is the designed rule.
-    private val SHARD_SUFFIX = Regex("-(\\d{5})-of-\\d{5}\\.gguf$")
+    internal val SHARD_SUFFIX = Regex("-(\\d{5})-of-\\d{5}\\.gguf$")
 
     private fun isNonFirstShard(name: String): Boolean =
         SHARD_SUFFIX.find(name)?.let { it.groupValues[1] != "00001" } == true
