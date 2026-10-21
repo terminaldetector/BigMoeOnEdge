@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims to follow
 Semantic Versioning.
 
+## [0.30.2] - 2026-10-21
+
+### Fixed
+- **The dev-flavor empty-state hint told you to adb-push, and never mentioned the file picker
+  that needs no adb at all.** `ModelManager.pushHint()` only named the catalog and `adb push` for
+  the dev build (`SHARED_STORAGE` flavor); the Play-flavor branch already named "pick a .gguf you
+  already have on the device", but a reader of the dev build's hint had no way to know the same
+  `Other model → Pick file` button — present in both flavors — can grab a `.gguf` straight out of
+  `Downloads` through the system file picker, no all-files permission and no adb needed. The hint
+  now names it for both flavors.
+- App version bumped to 0.30.2 (versionCode 47).
+
 ## [0.30.1] - 2026-10-17
 
 ### Fixed
